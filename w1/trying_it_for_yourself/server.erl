@@ -1,7 +1,7 @@
 - module(server).
-- export([server/1]).
+- export([server/0,server/1]).
 
-% use it like this from the console
+% Use it like this from the console
 % - spawn the server
 % ServerPid = spawn(server,server,[self()]).
 % - send a message to the server
@@ -21,3 +21,27 @@ server(ReplyPid) ->
         _ ->
             io:format("stopped~n")
     end.
+
+% Modification to deal with different clients
+% Use it like this from the console
+% - spawn the server
+% ServerPid = spawn(server,server,[]).
+% - send a message to the server
+% ServerPid ! {self(), check, "ABC"}.
+% - check responses sent to the console
+% flush().
+
+server() ->
+    receive 
+        {ReplyPid,check,Str} ->
+            IsPalin = palin:palindrome(Str),
+            ResultStr = case IsPalin of
+                true -> " is a palindrome";
+                false -> " is not a palindrome"
+            end,
+            ReplyPid ! {result, "\"" ++ Str ++ "\"" ++ ResultStr},
+            server();
+        _ ->
+            io:format("stopped~n")
+    end.
+    
