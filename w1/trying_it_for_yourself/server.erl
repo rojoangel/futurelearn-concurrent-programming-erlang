@@ -1,5 +1,5 @@
 - module(server).
-- export([server/0,server/1]).
+- export([server/0,server/1,client/1]).
 
 % Use it like this from the console
 % - spawn the server
@@ -44,4 +44,17 @@ server() ->
         _ ->
             io:format("stopped~n")
     end.
-    
+
+% Server client
+% Use it like this form the console
+% - spawn the server
+% ServerPid = spawn(server,server,[]).
+% - spawn the client
+% spawn(server,client,[ServerPid]).
+
+client(ServerPid) ->
+    ServerPid ! {self(), check, "Dabale arroz a la zorra el abad"},
+    receive
+        {result, Msg} -> 
+            io:format(Msg++"~n")
+    end.
