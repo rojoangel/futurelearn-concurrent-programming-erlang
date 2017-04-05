@@ -1,5 +1,5 @@
 - module(server).
-- export([server/0,server/1,client/1]).
+- export([server/0,server/1,client/1,frontend/2]).
 
 % Use it like this from the console
 % - spawn the server
@@ -57,4 +57,22 @@ client(ServerPid) ->
     receive
         {result, Msg} -> 
             io:format(Msg++"~n")
+    end.
+
+% Server front end
+% Use it like this form the console
+% - spawn the servers
+% Server1Pid = spawn(server,server,[]).
+% Server2Pid = spawn(server,server,[]).
+% - spawn the client
+% FrontEndPid = spawn(server,frontend,[Server1Pid,Server2Pid]).
+% - send a message to the frontend
+% FrontEndPid ! {self(), check, "ABC"}.
+% - get responses flush().
+
+frontend(Server1Pid, Server2Pid) ->
+    receive
+        Msg ->
+            Server1Pid ! Msg,
+            frontend(Server2Pid, Server1Pid) % reverting the order to alternate servers
     end.
