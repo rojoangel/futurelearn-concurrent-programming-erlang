@@ -40,6 +40,7 @@ server() ->
                 false -> " is not a palindrome"
             end,
             ReplyPid ! {result, "\"" ++ Str ++ "\"" ++ ResultStr},
+            io:format("Processed by ~p~n", [self()]), % instrumentation
             server();
         _ ->
             io:format("stopped~n")
