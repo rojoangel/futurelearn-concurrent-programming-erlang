@@ -7,10 +7,34 @@
 %%   (c) Francesco Cesarini and Simon Thompson
 
 -module(frequency).
--export([init/0]).
+-export([init/0,start/0]).
+
+%% Sample use of frequency process
+%% 3> frequency:start().
+%% true
+%% 4> frequency ! {request, self(), allocate}.
+%% {request,<0.64.0>,allocate}
+%% 5> receive {reply,Reply} -> Reply end.
+%% {ok,10}
+%% 6> frequency ! {request, self(), {deallocate, 10}}.
+%% {request,<0.64.0>,{deallocate,10}}
+%% 7> f(Reply).
+%% ok
+%% 8> receive {reply,Reply} -> Reply end.
+%% ok
+%% 9> frequency ! {request, self(), stop}.
+%% {request,<0.64.0>,stop}
+%% 10> f(Reply).
+%% ok
+%% 11> receive {reply,Reply} -> Reply end.
+%% stopped
+%% 12>
 
 %% These are the start functions used to create and
 %% initialize the server.
+
+start() ->
+  register(frequency, spawn(frequency,init,[])).
 
 init() ->
   Frequencies = {get_frequencies(), []},
