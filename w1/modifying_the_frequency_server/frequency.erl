@@ -52,8 +52,8 @@ loop(Frequencies) ->
       Pid ! {reply, Reply},
       loop(NewFrequencies);
     {request, Pid , {deallocate, Freq}} ->
-      NewFrequencies = deallocate(Frequencies, {Freq,Pid}),
-      Pid ! {reply, ok},
+      {NewFrequencies, Reply} = deallocate(Frequencies, {Freq,Pid}),
+      Pid ! {reply, Reply},
       loop(NewFrequencies);
     {request, Pid, stop} ->
       Pid ! {reply, stopped}
@@ -68,5 +68,10 @@ allocate({[Freq|Free], Allocated}, Pid) ->
   {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}}.
 
 deallocate({Free, Allocated}, {Freq,Pid}) ->
-  NewAllocated=lists:delete({Freq,Pid}, Allocated),
-  {[Freq|Free],  NewAllocated}.
+  case lists:member({Freq,Pid}, Allocated) of
+    true -> 
+      NewAllocated=lists:delete({Freq, Pid}, Allocated),
+      {[Freq|Free],  NewAllocated , ok};
+    false -> 
+      {{Free, Allocated}, {error, cannot_deallocate_unused_frequency}}
+  end.
