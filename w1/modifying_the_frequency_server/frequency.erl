@@ -10,25 +10,39 @@
 -export([init/0,start/0]).
 
 %% Sample use of frequency process
-%% 3> frequency:start().
+%% 1> c(frequency).
+%% {ok,frequency}
+%% 2> frequency:start().
 %% true
-%% 4> frequency ! {request, self(), allocate}.
-%% {request,<0.64.0>,allocate}
-%% 5> receive {reply,Reply} -> Reply end.
+%% 3> frequency ! {request, self(), allocate}.
+%% {request,<0.57.0>,allocate}
+%% 4> receive {reply, Msg} -> Msg end.
 %% {ok,10}
-%% 6> frequency ! {request, self(), {deallocate, 10}}.
-%% {request,<0.64.0>,{deallocate,10}}
-%% 7> f(Reply).
+%% 5> frequency ! {request, self(), allocate}.
+%% {request,<0.57.0>,allocate}
+%% 6> f(Msg).
 %% ok
-%% 8> receive {reply,Reply} -> Reply end.
+%% 7>  receive {reply, Msg} -> Msg end.
+%% {error,cannot_allocate_multiple_frequencies}
+%% 8> frequency ! {request, self(), {deallocate, 11}}.
+%% {request,<0.57.0>,{deallocate,11}}
+%% 9> f(Msg).
 %% ok
-%% 9> frequency ! {request, self(), stop}.
-%% {request,<0.64.0>,stop}
-%% 10> f(Reply).
+%% 10> receive {reply, Msg} -> Msg end.
+%% {error,cannot_deallocate_unused_frequency}
+%% 11> frequency ! {request, self(), {deallocate, 10}}.
+%% {request,<0.57.0>,{deallocate,10}}
+%% 12> f(Msg).
 %% ok
-%% 11> receive {reply,Reply} -> Reply end.
+%% 13> receive {reply, Msg} -> Msg end.
+%% ok
+%% 14> frequency ! {request, self(), stop}.
+%% {request,<0.57.0>,stop}
+%% 15> f(Msg).
+%% ok
+%% 16> receive {reply, Msg} -> Msg end.
 %% stopped
-%% 12>
+%% 17>
 
 %% These are the start functions used to create and
 %% initialize the server.
@@ -65,13 +79,18 @@ loop(Frequencies) ->
 allocate({[], Allocated}, _Pid) ->
   {{[], Allocated}, {error, no_frequency}};
 allocate({[Freq|Free], Allocated}, Pid) ->
-  {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}}.
+  case lists:keysearch(Pid, 2, Allocated) of 
+    false ->
+      {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}};
+    _ ->  
+      {{Free, Allocated}, {error, cannot_allocate_multiple_frequencies}}
+  end.
 
 deallocate({Free, Allocated}, {Freq,Pid}) ->
   case lists:member({Freq,Pid}, Allocated) of
     true -> 
       NewAllocated=lists:delete({Freq, Pid}, Allocated),
-      {[Freq|Free],  NewAllocated , ok};
+      {{[Freq|Free],  NewAllocated} , ok};
     false -> 
       {{Free, Allocated}, {error, cannot_deallocate_unused_frequency}}
   end.
