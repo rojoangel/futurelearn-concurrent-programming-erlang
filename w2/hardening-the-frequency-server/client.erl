@@ -20,6 +20,8 @@ init() ->
 % > frequency:start().
 % > client:start().
 % > client:start().
+% And to shutdown the entire system
+% > client:stop().
 
 loop(TimeBetweenAllocations, TimeToKeepFreq) ->
   case allocate() of
@@ -29,8 +31,8 @@ loop(TimeBetweenAllocations, TimeToKeepFreq) ->
       case deallocate(Freq) of 
           ok -> 
               io:format("~w deallocated ~w~n", [self(), Freq]);
-          exited ->
-              io:format("frequency server exited. Sleeping...~n")
+          killed ->
+              io:format("frequency server killed. Sleeping...~n")
       end;
     {error, no_frequency} ->
       io:format("~w failed to allocate a frequency~n", [self()]);
@@ -44,8 +46,8 @@ loop(TimeBetweenAllocations, TimeToKeepFreq) ->
 % Override deallocate to deal with 'EXIT' message  
 deallocate(Freq) ->
     receive
-        {'EXIT', _Pid, _Reason} -> % Checking for 'EXIT' msg before deallocating
-            exited
+        {'EXIT', _Pid, killed} -> % Checking for 'EXIT' msg before deallocating
+            killed
     after 0 -> % if there are no 'EXIT' msgs in the mailbox normal deallocate process
         frequency:deallocate(Freq)
     end.
@@ -59,4 +61,3 @@ allocate() ->
         _Error:_Reason -> 
             {error, server_down}
     end.
-                
