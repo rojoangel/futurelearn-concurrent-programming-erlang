@@ -26,8 +26,12 @@ loop(TimeBetweenAllocations, TimeToKeepFreq) ->
     {ok, Freq} ->
       io:format("~w allocated ~w~n", [self(), Freq]),
       timer:sleep(TimeToKeepFreq),
-      deallocate(Freq, TimeBetweenAllocations, TimeToKeepFreq),
-      io:format("~w deallocated ~w~n", [self(), Freq]);
+      case deallocate(Freq) of 
+          ok -> 
+              io:format("~w deallocated ~w~n", [self(), Freq]);
+          exited ->
+              io:format("frequency server exited. Sleeping...~n")
+      end;
     {error, no_frequency} ->
       io:format("~w failed to allocate a frequency~n", [self()]);
     {error, server_down} -> % Handle fequency server down
@@ -38,12 +42,10 @@ loop(TimeBetweenAllocations, TimeToKeepFreq) ->
 
 
 % Override deallocate to deal with 'EXIT' message  
-deallocate(Freq, TimeBetweenAllocations, TimeToKeepFreq) ->
+deallocate(Freq) ->
     receive
         {'EXIT', _Pid, _Reason} -> % Checking for 'EXIT' msg before deallocating
-            io:format("frequency server exited. Sleeping...~n"),
-            timer:sleep(TimeBetweenAllocations), % Sleeping
-            loop(TimeBetweenAllocations, TimeToKeepFreq) % loop as there's no need to deallocate
+            exited
     after 0 -> % if there are no 'EXIT' msgs in the mailbox normal deallocate process
         frequency:deallocate(Freq)
     end.
