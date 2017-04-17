@@ -38,7 +38,8 @@ loop(Frequencies) ->
       Pid ! {reply, ok},
       loop(NewFrequencies);
     {request, Pid, stop} ->
-      Pid ! {reply, stopped};
+      Pid ! {reply, stopped},
+      exit(self(), normal);    % - exits and propagates 'EXIT' lo linked trapped processes
     {'EXIT', Pid, _Reason} ->                   %%% CLAUSE ADDED
       NewFrequencies = exited(Frequencies, Pid), 
       loop(NewFrequencies)
@@ -75,8 +76,7 @@ allocate({[Freq|Free], Allocated}, Pid) ->
   {{Free, [{Freq, Pid}|Allocated]}, {ok, Freq}}.
 
 deallocate({Free, Allocated}, Freq) ->
-  {value,{Freq,Pid}} = lists:keysearch(Freq,1,Allocated),  %%% ADDED
-  unlink(Pid),                                             %%% ADDED
+  {value,{Freq,_Pid}} = lists:keysearch(Freq,1,Allocated),  %%% ADDED
   NewAllocated=lists:keydelete(Freq, 1, Allocated),
   {[Freq|Free],  NewAllocated}.
 
